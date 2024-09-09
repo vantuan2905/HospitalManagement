@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Patient, PatientDocument } from "./schemas/patient.schema";
 import { Model } from "mongoose";
@@ -30,5 +30,43 @@ export class PatientsService{
         }
     }
 
+    async findAll():Promise<Patient[]>{
+        try{
+            return await this.patientModel.find();
+        }catch(error){
+            console.error('An unexpected error occurred while retrieving patients:',error,);
+              throw new InternalServerErrorException('Failed to retrieve patients');
+        }
+    }
 
+    async findById(id:string):Promise<Patient>{
+        try{
+            const patient=await this.patientModel.findById(id)
+            if(!patient) throw new NotFoundException(`Patient with ID ${id} not found`);
+            return patient
+        }catch(error){
+            console.error(
+                'An unexpected error occurred while retrieving patient:',
+                error,
+              );
+              throw new InternalServerErrorException('Failed to retrieve patient');
+        }
+    }
+
+    async remove(id:string):Promise<Patient>{
+        try {
+            const deletedPatient=await this.patientModel.findByIdAndDelete(id)
+            if(!deletedPatient) throw new NotFoundException(`Patient with ID ${id} not found`)
+                return deletedPatient
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                throw error;
+              }
+              console.error(
+                'An unexpected error occurred while deleting patient:',
+                error,
+              );
+              throw new InternalServerErrorException('Failed to delete patient');
+        }
+    }
 }

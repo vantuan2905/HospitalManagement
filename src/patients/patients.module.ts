@@ -9,7 +9,7 @@ import { Patient, PatientSchema } from "./schemas/patient.schema";
         imports:[MongooseModule.forFeature([{ name: Patient.name, schema: PatientSchema }])],
         controllers:[PatientsController],
         providers:[PatientsService],
-        exports:[]
+        exports:[PatientsService,MongooseModule]
     }
 )
 export class PatientModule{}
