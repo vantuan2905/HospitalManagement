@@ -4,6 +4,7 @@ import { Patient, PatientDocument } from "./schemas/patient.schema";
 import { Model } from "mongoose";
 import { CreatePatientDto } from "./dto/CreatePatient.dto";
 import * as bcrypt from 'bcrypt'
+import {  UpdatePatientDetailDto } from "./dto/UpdatePatientDetail.dto";
 @Injectable()
 export class PatientsService{
     constructor(@InjectModel(Patient.name) private patientModel:Model<PatientDocument>){}
@@ -68,5 +69,30 @@ export class PatientsService{
               );
               throw new InternalServerErrorException('Failed to delete patient');
         }
+    }
+
+    async updateDetail(id:string,updatePatientDto:UpdatePatientDetailDto):Promise<Patient>{
+        try {
+            const updatedPatient = await this.patientModel.findByIdAndUpdate(
+              id,
+              updatePatientDto,
+              { new: true },
+            );
+            if (!updatedPatient) {
+              throw new NotFoundException(`Patient with ID ${id} not found`);
+            }
+            return updatedPatient;
+          } catch (error) {
+            if (error instanceof NotFoundException) {
+              throw error;
+            }
+            console.error(
+              'An unexpected error occurred while updating patient details:',
+              error,
+            );
+            throw new InternalServerErrorException(
+              'Failed to update patient details',
+            );
+          }
     }
 }
