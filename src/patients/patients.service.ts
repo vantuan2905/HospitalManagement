@@ -1,10 +1,11 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Patient, PatientDocument } from "./schemas/patient.schema";
 import { Model } from "mongoose";
 import { CreatePatientDto } from "./dto/CreatePatient.dto";
 import * as bcrypt from 'bcrypt'
 import {  UpdatePatientDetailDto } from "./dto/UpdatePatientDetail.dto";
+import { ChangePasswordDto } from "./dto/ChangePassword.dto";
 @Injectable()
 export class PatientsService{
     constructor(@InjectModel(Patient.name) private patientModel:Model<PatientDocument>){}
@@ -94,5 +95,39 @@ export class PatientsService{
               'Failed to update patient details',
             );
           }
+    }
+    async changePassword(id:string,changePasswordDto:ChangePasswordDto):Promise<Patient>{
+      try {
+        console.log(changePasswordDto)
+        const {oldPassword,newPassword}=changePasswordDto;
+        const patient=await this.patientModel.findById(id);
+        if(!patient) throw new NotFoundException(`Patient with ID ${id} not found`);
+        console.log(oldPassword,newPassword)
+        const isPasswordValid = await bcrypt.compare(
+          oldPassword,
+          patient.password,
+        );
+        if (!isPasswordValid) {
+          throw new BadRequestException('Invalid old password');
+        }
+  
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+        patient.password = hashedPassword;
+  
+        return await patient.save();
+      } catch (error) {
+        if (
+          error instanceof NotFoundException ||
+          error instanceof BadRequestException
+        ) {
+          throw error;
+        }
+        console.error(
+          'An unexpected error occurred while changing patient password:',
+          error,
+        );
+        throw new InternalServerErrorException('Failed to change password');
+      }
     }
 }
